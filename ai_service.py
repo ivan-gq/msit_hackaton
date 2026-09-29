@@ -133,7 +133,7 @@ Use this format exactly:
         client = OpenAI(api_key=api_key)
 
         response = client.responses.create(
-            model="YOUR_APPROVED_MODEL_NAME",
+            model="gpt-5-nano",
             input=prompt
         )
 
