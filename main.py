@@ -1,6 +1,9 @@
 from rapidfuzz import process, fuzz
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
+from ai_service import generate_fallback_recommendations
+import wikipediaapi
+from unidecode import unidecode
 
 # 1. Known Aliases / Slang / Abbreviations
 CITY_ALIASES = {
@@ -152,6 +155,26 @@ def validate_place(user_input: str) -> dict:
         return {"is_valid": False, "query": normalized_city, "geocoded_address": None}
 
 
+def get_wiki_summary(topic):
+    # Initialize the API with a required User-Agent (you can leave this example text as is)
+    wiki = wikipediaapi.Wikipedia(
+        user_agent='MSIT_HACKATON_app',
+        language='en'
+    )
+
+    # Fetch the page
+    page = wiki.page(topic)
+
+    # Check if the page actually exists
+    if page.exists():
+        # Get the summary, split it by periods, take the first 3, and stick them back together
+        sentences = page.summary.split('. ')
+        short_summary = '. '.join(sentences[:3]) + '.'
+        return short_summary
+    else:
+        return "Sorry, I couldn't find a Wikipedia page for that."
+
+
 def print_menu():
     print("----Welcome to BEFORE YOU GO----")
     print("We help you get all the insider information on the place you want to go.")
@@ -161,24 +184,28 @@ def main():
     menu_input = 0
     print_menu()
     while True:
-        raw_input = input("Type the city you want to visit: ").strip()
+        raw_input = input("Type the city you want to visit: ('q' to exit) ").strip()
         #Let the user quit
-        if raw_input == "quit":
+        if raw_input == "q":
             print("Cao!")
             break
 
         valid_place = validate_place(raw_input)
-        
+        #Check if place is valid and
         if valid_place["is_valid"]:
-            basic_info = valid_place["geocoded_address"].split(",")
-            print(f"City: {basic_info[0]}\nCountry: {basic_info[-1]}")
-            print("WIKI SUMMERY")
-            print("WIKI SUMMERY")
-            print("WIKI SUMMERY")
+
+            city_info = valid_place["geocoded_address"].split(",")
+            #use these variables for city
+            uni_city = unidecode(city_info[0])
+            # use these variables for country
+            uni_country = unidecode(city_info[-1])
+
+            print(f"City: {uni_city}\nCountry: {uni_country}")
+            print(get_wiki_summary(uni_city))
             print("Lets go deeper, type number of menu item:")
             while True:
-                menu_input = input("1. Music 2. Food 3. History: ")
-                if menu_input == "quit":
+                menu_input = input("1. Music // 2. Food // 3. History (type 'q' to enter city again) :")
+                if menu_input == "q":
                     print_menu()
                     break
                 else:
@@ -187,11 +214,38 @@ def main():
                         if menu_item not in [1,2,3]:
                             print("Not a valid input")
                         elif menu_item == 1:
-                            print("AI Music")
+                            result = generate_fallback_recommendations(
+                                location_name = uni_city,
+                                interests = ["Music"],
+                                location_summary = (
+                                    "Berlin is the capital and largest city of Germany. "
+                                    "It is known for its history, cultural diversity, and creative life."
+                                ),
+                                wikipedia_interest_info=""
+                            )
+                            print(result)
                         elif menu_item == 2:
-                            print("AI Food")
+                            result = generate_fallback_recommendations(
+                                location_name = uni_city,
+                                interests = ["Food"],
+                                location_summary = (
+                                    "Berlin is the capital and largest city of Germany. "
+                                    "It is known for its history, cultural diversity, and creative life."
+                                ),
+                                wikipedia_interest_info=""
+                            )
+                            print(result)
                         elif menu_item == 3:
-                            print("AI History")
+                            result = generate_fallback_recommendations(
+                                location_name = uni_city,
+                                interests = ["History"],
+                                location_summary = (
+                                    "Berlin is the capital and largest city of Germany. "
+                                    "It is known for its history, cultural diversity, and creative life."
+                                ),
+                                wikipedia_interest_info=""
+                            )
+                            print(result)
                     except ValueError:
                         print("Must be number")
         else:
