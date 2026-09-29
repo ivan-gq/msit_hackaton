@@ -158,23 +158,44 @@ def print_menu():
 
 
 def main():
+    menu_input = 0
     print_menu()
     while True:
         raw_input = input("Type the city you want to visit: ").strip()
-        valid_place = validate_place(raw_input)
-
         #Let the user quit
         if raw_input == "quit":
             print("Cao!")
             break
+
+        valid_place = validate_place(raw_input)
         
-        print(valid_place)
         if valid_place["is_valid"]:
-            print(normalize_input(raw_input))
-            print("Valid place")
+            basic_info = valid_place["geocoded_address"].split(",")
+            print(f"City: {basic_info[0]}\nCountry: {basic_info[-1]}")
+            print("WIKI SUMMERY")
+            print("WIKI SUMMERY")
+            print("WIKI SUMMERY")
+            print("Lets go deeper, type number of menu item:")
+            while True:
+                menu_input = input("1. Music 2. Food 3. History: ")
+                if menu_input == "quit":
+                    print_menu()
+                    break
+                else:
+                    try:
+                        menu_item = int(menu_input)
+                        if menu_item not in [1,2,3]:
+                            print("Not a valid input")
+                        elif menu_item == 1:
+                            print("AI Music")
+                        elif menu_item == 2:
+                            print("AI Food")
+                        elif menu_item == 3:
+                            print("AI History")
+                    except ValueError:
+                        print("Must be number")
         else:
             print("No such city, please re enter the city")
-            print(normalize_input(raw_input))
 
 
 if __name__ == "__main__":
