@@ -1,9 +1,17 @@
+import os
 from rapidfuzz import process, fuzz
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 from ai_service import generate_fallback_recommendations
 import wikipediaapi
 from unidecode import unidecode
+import pyfiglet
+from rich.console import Console
+import sys
+import time
+
+console = Console(force_terminal=True, force_interactive=True)
+os.environ["PYTHONUNBUFFERED"] = "1"
 
 # 1. Known Aliases / Slang / Abbreviations
 CITY_ALIASES = {
@@ -87,6 +95,10 @@ KNOWN_CITIES = [
     "Sydney", "Melbourne", "Brisbane", "Perth", "Adelaide", "Auckland", "Wellington"
 ]
 
+def clear_terminal():
+    # 'cls' for Windows (nt), 'clear' for Linux/macOS
+    os.system('cls' if os.name == 'nt' else 'clear')
+
 
 def normalize_input(user_input: str) -> str:
     """
@@ -110,7 +122,7 @@ def normalize_input(user_input: str) -> str:
         scorer=fuzz.WRatio,
         score_cutoff=75.0
     )
-    print(match)
+    
     if match:
         # match is a tuple: (matched_string, score, index)
         matched_city = match[0]
@@ -161,6 +173,7 @@ def get_wiki_summary(topic):
         user_agent='MSIT_HACKATON_app',
         language='en'
     )
+    
 
     # Fetch the page
     page = wiki.page(topic)
@@ -174,10 +187,25 @@ def get_wiki_summary(topic):
     else:
         return "Sorry, I couldn't find a Wikipedia page for that."
 
+    
+def typewriter(text: str, delay: float = 0.015):
+    for char in text:
+        sys.stdout.write(char)
+        sys.stdout.flush()  # Forces character to print immediately
+        time.sleep(delay)
+    print()  # Add a newline at the end
+
 
 def print_menu():
-    print("----Welcome to BEFORE YOU GO----")
-    print("We help you get all the insider information on the place you want to go.")
+    clear_terminal()
+    print("Welcome to")
+    ascii_banner = pyfiglet.figlet_format("Welcome to . . .", font="standard")
+    print(ascii_banner)
+    time.sleep(0.5)
+    ascii_banner = pyfiglet.figlet_format("BEFORE YOU GO", font="slant")
+    print(ascii_banner)
+    print("---------------------------------------------------------------------------")
+    typewriter("We help you get all the insider information on the place you want to go.")
 
 
 def main():
@@ -187,7 +215,12 @@ def main():
         raw_input = input("Type the city you want to visit: ('q' to exit) ").strip()
         #Let the user quit
         if raw_input == "q":
-            print("Cao!")
+            clear_terminal()
+            ascii_banner = pyfiglet.figlet_format("Bye bye!!!", font="slant")
+            print(ascii_banner)
+            typewriter("Thanks for using BEFORE YOU GO!")
+            time.sleep(2)
+            clear_terminal()
             break
 
         valid_place = validate_place(raw_input)
@@ -200,9 +233,11 @@ def main():
             # use these variables for country
             uni_country = unidecode(city_info[-1])
 
-            print(f"City: {uni_city}\nCountry: {uni_country}")
-            print(get_wiki_summary(uni_city))
-            print("Lets go deeper, type number of menu item:")
+            print(f"\nCity: {uni_city}\nCountry: {uni_country}\n")
+
+            with console.status("[bold green]Asking wikipedia...[/bold green]", spinner="dots"):
+                print(f"Summery:\n{get_wiki_summary(uni_city)}")
+            typewriter("\n\nLets go deeper, type number of menu item:")
             while True:
                 menu_input = input("1. Music // 2. Food // 3. History (type 'q' to enter city again) :")
                 if menu_input == "q":
@@ -214,37 +249,40 @@ def main():
                         if menu_item not in [1,2,3]:
                             print("Not a valid input")
                         elif menu_item == 1:
-                            result = generate_fallback_recommendations(
-                                location_name = uni_city,
-                                interests = ["Music"],
-                                location_summary = (
-                                    "Berlin is the capital and largest city of Germany. "
-                                    "It is known for its history, cultural diversity, and creative life."
-                                ),
-                                wikipedia_interest_info=""
-                            )
+                            with console.status("[bold green]Asking ChatGPT...[/bold green]", spinner="dots"):
+                                result = generate_fallback_recommendations(
+                                    location_name = uni_city,
+                                    interests = ["Music"],
+                                    location_summary = (
+                                        "Berlin is the capital and largest city of Germany. "
+                                        "It is known for its history, cultural diversity, and creative life."
+                                    ),
+                                    wikipedia_interest_info=""
+                                )
                             print(result)
                         elif menu_item == 2:
-                            result = generate_fallback_recommendations(
-                                location_name = uni_city,
-                                interests = ["Food"],
-                                location_summary = (
-                                    "Berlin is the capital and largest city of Germany. "
-                                    "It is known for its history, cultural diversity, and creative life."
-                                ),
-                                wikipedia_interest_info=""
-                            )
+                            with console.status("[bold green]Asking ChatGPT...[/bold green]", spinner="dots"):
+                                result = generate_fallback_recommendations(
+                                    location_name = uni_city,
+                                    interests = ["Food"],
+                                    location_summary = (
+                                        "Berlin is the capital and largest city of Germany. "
+                                        "It is known for its history, cultural diversity, and creative life."
+                                    ),
+                                    wikipedia_interest_info=""
+                                )
                             print(result)
                         elif menu_item == 3:
-                            result = generate_fallback_recommendations(
-                                location_name = uni_city,
-                                interests = ["History"],
-                                location_summary = (
-                                    "Berlin is the capital and largest city of Germany. "
-                                    "It is known for its history, cultural diversity, and creative life."
-                                ),
-                                wikipedia_interest_info=""
-                            )
+                            with console.status("[bold green]Asking ChatGPT...[/bold green]", spinner="dots"):
+                                result = generate_fallback_recommendations(
+                                    location_name = uni_city,
+                                    interests = ["History"],
+                                    location_summary = (
+                                        "Berlin is the capital and largest city of Germany. "
+                                        "It is known for its history, cultural diversity, and creative life."
+                                    ),
+                                    wikipedia_interest_info=""
+                                )
                             print(result)
                     except ValueError:
                         print("Must be number")
