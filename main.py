@@ -146,7 +146,6 @@ def typewriter(text: str, delay: float = 0.01):
 
 def print_menu():
     clear_terminal()
-    print("Welcome to")
     ascii_banner = pyfiglet.figlet_format("Welcome to . . .", font="standard")
     print(ascii_banner)
     time.sleep(0.5)

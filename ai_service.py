@@ -107,7 +107,12 @@ Rules:
 
         response = client.responses.create(
             model="gpt-5-nano",
-            input=prompt
+            input=prompt,
+            tools=[
+                {
+                    "type": "web_search"
+                }
+            ]
         )
 
         return response.output_text
