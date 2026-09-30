@@ -1,4 +1,5 @@
 import os
+from cities_data import CITY_ALIASES, KNOWN_CITIES
 from rapidfuzz import process, fuzz
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
@@ -13,91 +14,41 @@ import time
 console = Console(force_terminal=True, force_interactive=True)
 os.environ["PYTHONUNBUFFERED"] = "1"
 
-# 1. Known Aliases / Slang / Abbreviations
-CITY_ALIASES = {
-    # UK / Ireland
-    "ldn": "London", "mcr": "Manchester", "brum": "Birmingham", "dub": "Dublin",
-    
-    # Germany / Central Europe
-    "hh": "Hamburg", "ber": "Berlin", "muc": "Munich", "fra": "Frankfurt",
-    "cgn": "Cologne", "dus": "Düsseldorf", "vie": "Vienna", "zrh": "Zurich",
-    
-    # Rest of Europe
-    "par": "Paris", "bcn": "Barcelona", "mad": "Madrid", "ams": "Amsterdam",
-    "rom": "Rome", "lis": "Lisbon", "cph": "Copenhagen", "sto": "Stockholm",
-    
-    # Americas
-    "nyc": "New York", "ny": "New York", "la": "Los Angeles", "lax": "Los Angeles",
-    "chi": "Chicago", "sf": "San Francisco", "sfo": "San Francisco", "sea": "Seattle",
-    "bos": "Boston", "dc": "Washington", "atx": "Austin", "mia": "Miami",
-    "vegas": "Las Vegas", "pto": "Porto", "yvr": "Vancouver", "yyz": "Toronto",
-    
-    # Asia / Oceania
-    "tky": "Tokyo", "hk": "Hong Kong", "sg": "Singapore", "kl": "Kuala Lumpur",
-    "syd": "Sydney", "mel": "Melbourne", "dxb": "Dubai"
+CATEGORY_KEYWORDS = {
+    "Music": ["music", "concert", "opera", "nightlife", "festival", "performing arts", "entertainment"],
+    "Food": ["food", "cuisine", "culinary", "gastronomy", "dining", "restaurant"],
+    "History": ["history", "heritage", "etymology"],
 }
 
-# 2. Canonical Target Cities for Fuzzy Correction
-KNOWN_CITIES = [
-    # United Kingdom & Ireland
-    "London", "Manchester", "Birmingham", "Liverpool", "Edinburgh", "Glasgow", 
-    "Leeds", "Bristol", "Belfast", "Dublin", "Cork", "Newcastle", "Sheffield",
-    "Nottingham", "Cardiff", "Oxford", "Cambridge", "Southampton", "Brighton",
-
-    # Germany & Central Europe
-    "Hamburg", "Berlin", "Munich", "Cologne", "Frankfurt", "Stuttgart", "Düsseldorf", 
-    "Dortmund", "Essen", "Leipzig", "Bremen", "Dresden", "Hannover", "Nuremberg", 
-    "Duisburg", "Bochum", "Wuppertal", "Bielefeld", "Bonn", "Münster", "Vienna", 
-    "Zurich", "Geneva", "Basel", "Bern", "Prague", "Warsaw", "Krakow", "Budapest",
-
-    # Western & Southern Europe
-    "Paris", "Marseille", "Lyon", "Toulouse", "Nice", "Nantes", "Strasbourg",
-    "Bordeaux", "Lille", "Rennes", "Brussels", "Antwerp", "Amsterdam", "Rotterdam", 
-    "The Hague", "Utrecht", "Madrid", "Barcelona", "Valencia", "Seville", "Malaga", 
-    "Zaragoza", "Lisbon", "Porto", "Rome", "Milan", "Naples", "Turin", "Palermo", 
-    "Genoa", "Bologna", "Florence", "Athens", "Thessaloniki",
-
-    # Northern & Eastern Europe
-    "Copenhagen", "Stockholm", "Gothenburg", "Oslo", "Bergen", "Helsinki", 
-    "Reykjavik", "Tallinn", "Riga", "Vilnius", "Bucharest", "Sofia", "Belgrade", 
-    "Zagreb", "Ljubljana", "Bratislava", "Kyiv", "Kharkiv", "Odesa", "Istanbul",
-
-    # North America
-    "New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia", 
-    "San Antonio", "San Diego", "Dallas", "San Jose", "Austin", "Jacksonville", 
-    "Fort Worth", "Columbus", "Charlotte", "Indianapolis", "San Francisco", 
-    "Seattle", "Denver", "Washington", "Boston", "Nashville", "El Paso", 
-    "Detroit", "Las Vegas", "Portland", "Memphis", "Louisville", "Baltimore", 
-    "Milwaukee", "Albuquerque", "Tucson", "Fresno", "Sacramento", "Mesa", 
-    "Atlanta", "Kansas City", "Colorado Springs", "Miami", "Raleigh", "Omaha", 
-    "Long Beach", "Virginia Beach", "Oakland", "Minneapolis", "Tampa", "Tulsa", 
-    "Toronto", "Montreal", "Vancouver", "Calgary", "Edmonton", "Ottawa", 
-    "Winnipeg", "Quebec City", "Mexico City", "Guadalajara", "Monterrey",
-
-    # South America
-    "São Paulo", "Rio de Janeiro", "Brasília", "Salvador", "Fortaleza", 
-    "Belo Horizonte", "Manaus", "Curitiba", "Recife", "Porto Alegre", 
-    "Buenos Aires", "Córdoba", "Rosario", "Mendoza", "Santiago", "Lima", 
-    "Bogotá", "Medellín", "Cali", "Caracas", "Quito", "Guayaquil", "Montevideo",
-
-    # Asia & Middle East
-    "Tokyo", "Yokohama", "Osaka", "Nagoya", "Sapporo", "Kobe", "Kyoto", "Fukuoka", 
-    "Beijing", "Shanghai", "Guangzhou", "Shenzhen", "Chengdu", "Chongqing", 
-    "Hangzhou", "Wuhan", "Xi'an", "Hong Kong", "Taipei", "Seoul", "Busan", 
-    "Incheon", "Singapore", "Bangkok", "Kuala Lumpur", "Jakarta", "Manila", 
-    "Hanoi", "Ho Chi Minh City", "Mumbai", "Delhi", "Bangalore", "Hyderabad", 
-    "Ahmedabad", "Chennai", "Kolkata", "Surat", "Pune", "Dubai", "Abu Dhabi", 
-    "Riyadh", "Jeddah", "Doha", "Tel Aviv", "Jerusalem", "Amman", "Beirut",
-
-    # Africa & Oceania
-    "Cairo", "Alexandria", "Giza", "Johannesburg", "Cape Town", "Durban", 
-    "Pretoria", "Nairobi", "Lagos", "Accra", "Casablanca", "Tunis", "Algiers", 
-    "Sydney", "Melbourne", "Brisbane", "Perth", "Adelaide", "Auckland", "Wellington"
-]
+wiki = wikipediaapi.Wikipedia(
+    user_agent='MSIT_HACKATON_app',
+    language='en'
+)
 
 def clear_terminal():
     # 'cls' for Windows (nt), 'clear' for Linux/macOS
     os.system('cls' if os.name == 'nt' else 'clear')
+
+
+def get_category_info(city, category, max_chars=10000):
+    """Returns the text of the sections whose heading contains a keyword of the category.
+    Returns an empty string if nothing matched."""
+    page = wiki.page(city)
+    if not page.exists():
+        return ""
+
+    keywords = CATEGORY_KEYWORDS[category]
+    found = []
+
+    def search(sections):
+        for section in sections:
+            if any(keyword in section.title.lower() for keyword in keywords):
+                found.append(section.full_text())
+            else:
+                search(section.sections)
+
+    search(page.sections)
+    return "\n\n".join(found)[:max_chars]
 
 
 def normalize_input(user_input: str) -> str:
@@ -122,7 +73,7 @@ def normalize_input(user_input: str) -> str:
         scorer=fuzz.WRatio,
         score_cutoff=75.0
     )
-    
+
     if match:
         # match is a tuple: (matched_string, score, index)
         matched_city = match[0]
@@ -148,7 +99,7 @@ def validate_place(user_input: str) -> dict:
         if not location:
             return {"is_valid": False, "normalized_query": normalized_city, "geocoded_address": None}
 
-        
+
         raw_address = location.raw.get("address", {})
         valid_place_types = {
             "city", "town", "village", "municipality"
@@ -173,7 +124,7 @@ def get_wiki_summary(topic):
         user_agent='MSIT_HACKATON_app',
         language='en'
     )
-    
+
 
     # Fetch the page
     page = wiki.page(topic)
@@ -187,8 +138,8 @@ def get_wiki_summary(topic):
     else:
         return "Sorry, I couldn't find a Wikipedia page for that."
 
-    
-def typewriter(text: str, delay: float = 0.015):
+
+def typewriter(text: str, delay: float = 0.01):
     for char in text:
         sys.stdout.write(char)
         sys.stdout.flush()  # Forces character to print immediately
@@ -216,7 +167,7 @@ def main():
         #Let the user quit
         if raw_input == "q":
             clear_terminal()
-            ascii_banner = pyfiglet.figlet_format("Bye bye!!!", font="slant")
+            ascii_banner = pyfiglet.figlet_format("Bye bye ! ! !", font="slant")
             print(ascii_banner)
             typewriter("Thanks for using BEFORE YOU GO!")
             time.sleep(2)
@@ -239,7 +190,7 @@ def main():
                 print(f"Summery:\n{get_wiki_summary(uni_city)}")
             typewriter("\n\nLets go deeper, type number of menu item:")
             while True:
-                menu_input = input("1. Music // 2. Food // 3. History (type 'q' to enter city again) :")
+                menu_input = input("1. Music // 2. Food // 3. History (type 'q' to enter city again): ")
                 if menu_input == "q":
                     print_menu()
                     break
@@ -249,41 +200,50 @@ def main():
                         if menu_item not in [1,2,3]:
                             print("Not a valid input")
                         elif menu_item == 1:
-                            with console.status("[bold green]Asking ChatGPT...[/bold green]", spinner="dots"):
-                                result = generate_fallback_recommendations(
-                                    location_name = uni_city,
-                                    interests = ["Music"],
-                                    location_summary = (
-                                        "Berlin is the capital and largest city of Germany. "
-                                        "It is known for its history, cultural diversity, and creative life."
-                                    ),
-                                    wikipedia_interest_info=""
-                                )
-                            print(result)
+                            with console.status("[bold green]Asking wikipedia...[/bold green]", spinner="dots"):
+                                result = get_category_info(uni_city, "Music", max_chars=3000)
+                            if result != "":
+                                print(result)
+                            else:
+                                print("Nothing on wikipedia, asking AI")
+                                with console.status("[bold green]Asking ChatGPT...[/bold green]", spinner="dots"):
+                                    result = generate_fallback_recommendations(
+                                        location_name = uni_city,
+                                        interests = ["Music"],
+                                        location_summary = (),
+                                        wikipedia_interest_info=""
+                                    )
+                                print(result)
                         elif menu_item == 2:
-                            with console.status("[bold green]Asking ChatGPT...[/bold green]", spinner="dots"):
-                                result = generate_fallback_recommendations(
-                                    location_name = uni_city,
-                                    interests = ["Food"],
-                                    location_summary = (
-                                        "Berlin is the capital and largest city of Germany. "
-                                        "It is known for its history, cultural diversity, and creative life."
-                                    ),
-                                    wikipedia_interest_info=""
-                                )
-                            print(result)
+                            with console.status("[bold green]Asking wikipedia...[/bold green]", spinner="dots"):
+                                result = get_category_info(uni_city, "Food", max_chars=3000)
+                            if result != "":
+                                print(result)
+                            else:
+                                print("Nothing on wikipedia, asking AI")
+                                with console.status("[bold green]Asking ChatGPT...[/bold green]", spinner="dots"):
+                                    result = generate_fallback_recommendations(
+                                        location_name = uni_city,
+                                        interests = ["Food"],
+                                        location_summary = (),
+                                        wikipedia_interest_info=""
+                                    )
+                                print(result)
                         elif menu_item == 3:
-                            with console.status("[bold green]Asking ChatGPT...[/bold green]", spinner="dots"):
-                                result = generate_fallback_recommendations(
-                                    location_name = uni_city,
-                                    interests = ["History"],
-                                    location_summary = (
-                                        "Berlin is the capital and largest city of Germany. "
-                                        "It is known for its history, cultural diversity, and creative life."
-                                    ),
-                                    wikipedia_interest_info=""
-                                )
-                            print(result)
+                            with console.status("[bold green]Asking wikipedia...[/bold green]", spinner="dots"):
+                                result = get_category_info(uni_city, "History", max_chars=3000)
+                            if result != "":
+                                print(result)
+                            else:
+                                print("Nothing on wikipedia, asking AI")
+                                with console.status("[bold green]Asking ChatGPT...[/bold green]", spinner="dots"):
+                                    result = generate_fallback_recommendations(
+                                        location_name = uni_city,
+                                        interests = ["History"],
+                                        location_summary = (),
+                                        wikipedia_interest_info=""
+                                    )
+                                print(result)
                     except ValueError:
                         print("Must be number")
         else:

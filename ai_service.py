@@ -67,9 +67,9 @@ For EACH selected interest, provide exactly THREE subpoints.
 
 Use this format exactly:
 
-## [Interest name]
+[Interest name]
 
-1. **Name of place / activity / local area**
+1. Name of place / activity / local area
    - Type: restaurant, café, market, venue, neighbourhood, walking route,
      museum, bar, cultural activity, or local custom.
    - Location: neighbourhood, district, city area, or address only if
@@ -78,14 +78,14 @@ Use this format exactly:
    - Why it fits the user: connect it to the selected interest.
    - Practical tip: one useful suggestion for visiting.
 
-2. **Name of place / activity / local area**
+2. Name of place / activity / local area
    - Type:
    - Location:
    - Why locals value it:
    - Why it fits the user:
    - Practical tip:
 
-3. **Name of place / activity / local area**
+3. Name of place / activity / local area
    - Type:
    - Location:
    - Why locals value it:
