@@ -11,19 +11,23 @@ from rich.console import Console
 import sys
 import time
 
+#initiate rich console
 console = Console(force_terminal=True, force_interactive=True)
 os.environ["PYTHONUNBUFFERED"] = "1"
 
+#Keyword translator for getting specific topic from wikipedia
 CATEGORY_KEYWORDS = {
     "Music": ["music", "concert", "opera", "nightlife", "festival", "performing arts", "entertainment"],
     "Food": ["food", "cuisine", "culinary", "gastronomy", "dining", "restaurant"],
     "History": ["history", "heritage", "etymology"],
 }
 
+# Initialize the API with a required User-Agent (you can leave this example text as is)
 wiki = wikipediaapi.Wikipedia(
     user_agent='MSIT_HACKATON_app',
     language='en'
 )
+
 
 def clear_terminal():
     # 'cls' for Windows (nt), 'clear' for Linux/macOS
@@ -68,10 +72,10 @@ def normalize_input(user_input: str) -> str:
     # Step 2: High-speed fuzzy match using RapidFuzz
     # score_cutoff=75.0 requires a minimum 75% similarity (0–100 scale)
     match = process.extractOne(
-        query=cleaned.title(),
-        choices=KNOWN_CITIES,
-        scorer=fuzz.WRatio,
-        score_cutoff=75.0
+        query = cleaned.title(),
+        choices = KNOWN_CITIES,
+        scorer = fuzz.WRatio,
+        score_cutoff = 75.0
     )
 
     if match:
@@ -119,13 +123,6 @@ def validate_place(user_input: str) -> dict:
 
 
 def get_wiki_summary(topic):
-    # Initialize the API with a required User-Agent (you can leave this example text as is)
-    wiki = wikipediaapi.Wikipedia(
-        user_agent='MSIT_HACKATON_app',
-        language='en'
-    )
-
-
     # Fetch the page
     page = wiki.page(topic)
 
